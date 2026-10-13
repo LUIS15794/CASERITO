@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caserito Club - Sistema de Fidelización</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>body { font-family: 'Poppins', sans-serif; }</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header General -->
+    <header class="bg-slate-800 border-b border-slate-700 shadow-md">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">🎟️</span>
+                <h1 class="text-xl font-bold tracking-wide">Caserito Club</h1>
+            </div>
+            <div id="headerNav" class="hidden">
+                <button onclick="goHome()" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition text-slate-200">← Cambiar de Modo</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-5xl w-full mx-auto p-4 flex flex-col justify-center">
+
+        <!-- 1. Pantalla de Selección Inicial (Home) -->
+        <div id="homeScreen" class="max-w-md w-full mx-auto text-center space-y-8 my-auto">
+            <div class="w-20 h-20 bg-orange-500/20 text-orange-400 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-inner border border-orange-500/30">🏷️</div>
+            <div>
+                <h2 class="text-3xl font-extrabold tracking-tight mb-2 text-white">¡Bienvenido a Caserito!</h2>
+                <p class="text-slate-400 text-sm">Elige una opción para ingresar al sistema de puntos de nuestra bodega y librería.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="showClientLogin()" class="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-95 text-white font-bold rounded-2xl shadow-lg transition flex items-center justify-center space-x-2 text-lg">
+                    <span>🛍️ Soy Cliente / Consultar Puntos</span>
+                </button>
+                <button onclick="showAdminLogin()" class="w-full py-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold rounded-2xl shadow transition flex items-center justify-center space-x-2">
+                    <span>🛡️ Panel de Administrador</span>
+                </button>
+            </div>
+
+            <!-- Código QR Integrado en el Inicio para el Mostrador -->
+            <div class="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60 text-center space-y-2 mt-8">
+                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Código QR para el Mostrador</p>
+                <div class="bg-white p-2 rounded-xl inline-block shadow">
+                    <canvas id="qr-code-canvas" class="rounded-lg"></canvas>
+                </div>
+                <p class="text-[11px] text-slate-500">Tus clientes escanean este código para ingresar directamente.</p>
+            </div>
+        </div>
+
+        <!-- 2. Pantalla Login de Administrador (PIN Oculto) -->
+        <div id="adminLoginScreen" class="hidden max-w-md w-full mx-auto bg-slate-800 rounded-3xl shadow-xl border border-slate-700 p-8 text-center my-auto space-y-6">
+            <div class="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center text-3xl mx-auto">🔒</div>
+            <div>
+                <h2 class="text-2xl font-bold mb-1">Acceso Administrador</h2>
+                <p class="text-slate-400 text-sm">Ingresa tu clave de seguridad.</p>
+            </div>
+            <div class="space-y-4">
+                <!-- Se usa type="password" para que la clave no sea visible -->
+                <input type="password" id="adminPinInput" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-center font-bold text-xl tracking-widest">
+                <button onclick="verifyAdminPin()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow transition">Entrar al Panel</button>
+                <button onclick="goHome()" class="w-full py-2 text-slate-400 hover:text-white text-xs font-medium transition">Regresar</button>
+            </div>
+        </div>
+
+        <!-- 3. Panel de Administrador Completo -->
+        <div id="adminDashboard" class="hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <h2 class="text-lg font-bold text-blue-400 flex items-center space-x-2"><span>🛡️</span><span>Panel de Control (Admin)</span></h2>
+                <button onclick="goHome()" class="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition">Cerrar Sesión</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Crear Cliente -->
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">➕ Registrar Cliente</h3>
+                    <input type="text" id="newClientName" placeholder="Nombre completo" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white">
+                    <input type="text" id="newClientPhone" placeholder="Teléfono" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white">
+                    <input type="text" id="newClientObs" placeholder="Observación (Ej. Frecuente)" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white">
+                    <button onclick="registerNewClient()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl text-sm transition">Guardar Cliente</button>
+                </div>
+
+                <!-- Estadísticas y Promociones -->
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3">📊 Métricas del Local</h3>
+                        <div class="grid grid-cols-2 gap-3 text-center">
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700">
+                                <p id="statClients" class="text-2xl font-extrabold text-blue-400">0</p>
+                                <p class="text-xs text-slate-400">Caseritos</p>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700">
+                                <p id="statRedemptions" class="text-2xl font-extrabold text-orange-400">0</p>
+                                <p class="text-xs text-slate-400">Canjes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="openRewardsModal()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl text-sm transition">🎁 Administrar Catálogo / Premios</button>
+                </div>
+
+                <!-- Solicitudes Pendientes de Canje -->
+                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-orange-400 uppercase tracking-wider mb-2">🔔 Solicitudes de Canje</h3>
+                        <p class="text-xs text-slate-400 mb-3">Premios solicitados por clientes desde su portal web.</p>
+                    </div>
+                    <div id="adminPendingRequests" class="space-y-2 max-h-36 overflow-y-auto">
+                        <p class="text-xs text-slate-500 italic">No hay solicitudes pendientes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Clientes con Edición Libre -->
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-bold">👥 Gestión de Clientes y Puntos</h3>
+                    <input type="text" id="adminSearch" onkeyup="filterAdminTable()" placeholder="Buscar cliente..." class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs font-semibold text-slate-400 uppercase">
+                                <th class="py-3 px-3">Código</th>
+                                <th class="py-3 px-3">Cliente</th>
+                                <th class="py-3 px-3">Teléfono</th>
+                                <th class="py-3 px-3 text-center">Puntos</th>
+                                <th class="py-3 px-3 text-center">Acciones Libres</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody" class="text-sm divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Pantalla Login de Cliente -->
+        <div id="clientLoginScreen" class="hidden max-w-md w-full mx-auto bg-slate-800 rounded-3xl shadow-xl border border-slate-700 p-8 text-center my-auto space-y-6">
+            <div class="w-16 h-16 bg-orange-500/20 text-orange-400 rounded-full flex items-center justify-center text-3xl mx-auto">🎟️</div>
+            <div>
+                <h2 class="text-2xl font-bold mb-1 text-white">Portal del Vecino</h2>
+                <p class="text-slate-400 text-sm">Ingresa tu número de celular o código para ver tus puntos.</p>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="clientInput" placeholder="Ej. 987654321 o CLI001" class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 text-center font-medium text-lg">
+                <button onclick="loginClient()" class="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl shadow transition">Consultar Mis Puntos</button>
+                <button onclick="goHome()" class="w-full py-2 text-slate-400 hover:text-white text-xs font-medium transition">Regresar al Inicio</button>
+            </div>
+        </div>
+
+        <!-- 5. Dashboard del Cliente (Solo Ver y Canjear) -->
+        <div id="clientDashboard" class="hidden space-y-6">
+            <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                <div>
+                    <p class="text-xs text-slate-400">HOLA,</p>
+                    <h2 id="clientNameDisplay" class="text-lg font-bold text-white">Juan Pérez</h2>
+                </div>
+                <button onclick="goHome()" class="text-sm px-3 py-1.5 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg font-medium transition">Salir</button>
+            </div>
+
+            <!-- Tarjeta de Puntos -->
+            <div class="bg-gradient-to-br from-orange-600 to-amber-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute right-[-20px] bottom-[-20px] text-white/10 text-9xl font-bold select-none">★</div>
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">Tus Puntos Acumulados</p>
+                        <h3 id="clientPointsDisplay" class="text-5xl font-extrabold tracking-tight mt-1">0</h3>
+                    </div>
+                    <span id="clientCodeBadge" class="bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">CLI001</span>
+                </div>
+                <p id="clientPhoneDisplay" class="mt-4 text-xs text-orange-200">📞 987654321</p>
+            </div>
+
+            <!-- Catálogo de Canjes -->
+            <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700 space-y-3">
+                <h3 class="text-lg font-bold text-white">🎁 Catálogo de Premios y Promociones</h3>
+                <p class="text-xs text-slate-400">Solicita tu premio y preséntalo en el mostrador.</p>
+                <div class="grid grid-cols-1 gap-3" id="clientRewardsCatalog"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Admin: Editor de Catálogo de Premios -->
+    <div id="rewardsModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 rounded-3xl p-6 max-w-lg w-full border border-slate-700 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-white">Gestión de Catálogo y Promociones</h3>
+            <p class="text-xs text-slate-400">Crea, edita o elimina premios y puntos libremente.</p>
+            <div id="rewardsEditorList" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+            <div class="flex justify-between pt-2">
+                <button onclick="addNewReward()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition">+ Nuevo Premio</button>
+                <button onclick="closeRewardsModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-semibold transition">Guardar y Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar QR del Mostrador automáticamente
+        new QRious({
+            element: document.getElementById('qr-code-canvas'),
+            value: window.location.href,
+            size: 160,
+            background: 'white',
+            foreground: '#f97316'
+        });
+
+        // Base de Datos Local unificada
+        let clients = JSON.parse(localStorage.getItem('caserito_all_clients')) || [
+            { code: "CLI001", name: "Juan Pérez", phone: "987654321", points: 1200, obs: "Frecuente" },
+            { code: "CLI002", name: "María Gómez", phone: "912345678", points: 450, obs: "Snacks" }
+        ];
+
+        let rewards = JSON.parse(localStorage.getItem('caserito_all_rewards')) || [
+            { id: 1, title: "Borrador o Tajador Escolar", points: 300, category: "Librería", desc: "Esencial para clases." },
+            { id: 2, title: "Galleta Popular con Relleno", points: 450, category: "Snacks", desc: "Dulce para el recreo." },
+            { id: 3, title: "Gaseosa Personal Fría (500ml)", points: 600, category: "Bodega", desc: "Para calmar la sed." }
+        ];
+
+        let requests = JSON.parse(localStorage.getItem('caserito_all_requests')) || [];
+        let currentClient = null;
+
+        function saveAll() {
+            localStorage.setItem('caserito_all_clients', JSON.stringify(clients));
+            localStorage.setItem('caserito_all_rewards', JSON.stringify(rewards));
+            localStorage.setItem('caserito_all_requests', JSON.stringify(requests));
+        }
+
+        // Navegación de Pantallas
+        function goHome() {
+            currentClient = null;
+            document.getElementById('headerNav').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+            document.getElementById('adminLoginScreen').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('clientLoginScreen').classList.add('hidden');
+            document.getElementById('clientDashboard').classList.add('hidden');
+        }
+
+        function showAdminLogin() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('adminLoginScreen').classList.remove('hidden');
+            document.getElementById('adminPinInput').value = '';
+        }
+
+        function showClientLogin() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('clientLoginScreen').classList.remove('hidden');
+            document.getElementById('clientInput').value = '';
+        }
+
+        // Verificación de PIN Admin
+        function verifyAdminPin() {
+            const pin = document.getElementById('adminPinInput').value;
+            if(pin === '76168951') {
+                document.getElementById('adminLoginScreen').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                document.getElementById('headerNav').classList.remove('hidden');
+                updateAdminDashboard();
+            } else {
+                alert("Contraseña incorrecta.");
+                document.getElementById('adminPinInput').value = '';
+            }
+        }
+
+        // Funciones de Administrador
+        function updateAdminDashboard() {
+            document.getElementById('statClients').textContent = clients.length;
+            document.getElementById('statRedemptions').textContent = requests.filter(r => r.status === 'Aprobado').length;
+            renderAdminTable(clients);
+            renderAdminRequests();
+        }
+
+        function renderAdminTable(data) {
+            const tbody = document.getElementById('adminTableBody');
+            if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">Sin clientes registrados.</td></tr>`; return; }
+            tbody.innerHTML = data.map(c => `
+                <tr class="hover:bg-slate-700/40 transition">
+                    <td class="py-3 px-3 font-semibold text-blue-400">${c.code}</td>
+                    <td class="py-3 px-3 font-medium text-white">${c.name}<br><span class="text-xs text-slate-400">${c.obs || ''}</span></td>
+                    <td class="py-3 px-3 text-slate-300">${c.phone}</td>
+                    <td class="py-3 px-3 text-center font-bold text-white">${c.points.toLocaleString()}</td>
+                    <td class="py-3 px-3 text-center space-x-1">
+                        <button onclick="adminAddPoints('${c.code}')" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-xs font-semibold">+ Puntos</button>
+                        <button onclick="adminEditClient('${c.code}')" class="px-2.5 py-1 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-xs font-semibold">Editar</button>
+                        <button onclick="adminDeleteClient('${c.code}')" class="px-2.5 py-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-xs font-semibold">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterAdminTable() {
+            const q = document.getElementById('adminSearch').value.toLowerCase();
+            renderAdminTable(clients.filter(c => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.phone.includes(q)));
+        }
+
+        function registerNewClient() {
+            const name = document.getElementById('newClientName').value.trim();
+            const phone = document.getElementById('newClientPhone').value.trim();
+            const obs = document.getElementById('newClientObs').value.trim();
+            if(!name || !phone) { alert("Completa nombre y teléfono."); return; }
+            
+            const nextId = 'CLI' + String(clients.length + 1).padStart(3, '0');
+            clients.push({ code: nextId, name, phone, points: 0, obs: obs || 'Cliente nuevo' });
+            saveAll();
+            updateAdminDashboard();
+            document.getElementById('newClientName').value = '';
+            document.getElementById('newClientPhone').value = '';
+            document.getElementById('newClientObs').value = '';
+            alert(`¡Cliente registrado con éxito: ${nextId} - ${name}!`);
+        }
+
+        function adminAddPoints(code) {
+            const client = clients.find(c => c.code === code);
+            const amt = prompt(`¿Cuántos puntos deseas sumar a ${client.name}?\n(1 Sol = 1 Punto)`);
+            if(amt === null) return;
+            const pts = parseInt(amt);
+            if(isNaN(pts) || pts <= 0) { alert("Cantidad inválida."); return; }
+            client.points += pts;
+            saveAll();
+            updateAdminDashboard();
+            alert(`¡Se sumaron ${pts} puntos! Nuevo total: ${client.points}`);
+        }
+
+        function adminEditClient(code) {
+            const c = clients.find(x => x.code === code);
+            const newName = prompt("Editar Nombre:", c.name);
+            if(newName === null) return;
+            const newPhone = prompt("Editar Teléfono:", c.phone);
+            if(newPhone === null) return;
+            const newPts = prompt("Editar Puntos Totales:", c.points);
+            if(newPts === null) return;
+
+            c.name = newName.trim();
+            c.phone = newPhone.trim();
+            c.points = parseInt(newPts) || c.points;
+            saveAll();
+            updateAdminDashboard();
+        }
+
+        function adminDeleteClient(code) {
+            if(confirm("¿Estás seguro de eliminar este cliente?")) {
+                clients = clients.filter(c => c.code !== code);
+                saveAll();
+                updateAdminDashboard();
+            }
+        }
+
+        // Solicitudes de Canje
+        function renderAdminRequests() {
+            const container = document.getElementById('adminPendingRequests');
+            const pending = requests.filter(r => r.status === 'Pendiente');
+            if(pending.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 italic">No hay solicitudes pendientes.</p>`;
+                return;
+            }
+            container.innerHTML = pending.map(r => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
+                    <div>
+                        <p class="font-bold text-white">${r.clientName}</p>
+                        <p class="text-slate-400">Premio: <span class="text-amber-400 font-semibold">${r.rewardTitle}</span> (${r.rewardPoints} pts)</p>
+                    </div>
+                    <div class="space-x-1">
+                        <button onclick="approveRequest(${r.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded">Aprobar</button>
+                        <button onclick="rejectRequest(${r.id})" class="px-2.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded">Rechazar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function approveRequest(id) {
+            const req = requests.find(r => r.id === id);
+            const client = clients.find(c => c.code === req.clientCode);
+            if(client.points < req.rewardPoints) { alert("El cliente ya no tiene suficientes puntos."); return; }
+            
+            client.points -= req.rewardPoints;
+            req.status = 'Aprobado';
+            saveAll();
+            updateAdminDashboard();
+            alert("¡Solicitud aprobada! Se descontaron los puntos al cliente.");
+        }
+
+        function rejectRequest(id) {
+            const req = requests.find(r => r.id === id);
+            req.status = 'Rechazado';
+            saveAll();
+            updateAdminDashboard();
+        }
+
+        // Editor de Premios / Catálogo
+        function openRewardsModal() {
+            renderRewardsEditor();
+            document.getElementById('rewardsModal').classList.remove('hidden');
+        }
+
+        function closeRewardsModal() {
+            document.getElementById('rewardsModal').classList.add('hidden');
+            saveAll();
+        }
+
+        function renderRewardsEditor() {
+            const container = document.getElementById('rewardsEditorList');
+            container.innerHTML = rewards.map((r, idx) => `
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-amber-400">Premio #${idx + 1}</span>
+                        <button onclick="deleteReward(${r.id})" class="text-xs text-red-400 hover:text-red-300">Eliminar</button>
+                    </div>
+                    <input type="text" value="${r.title}" onchange="updateRewardProp(${r.id}, 'title', this.value)" placeholder="Título del premio" class="w-full px-2.5 py-1.5 bg-slate-800 rounded border border-slate-700 text-sm text-white">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="${r.points}" onchange="updateRewardProp(${r.id}, 'points', parseInt(this.value))" placeholder="Puntos" class="px-2.5 py-1.5 bg-slate-800 rounded border border-slate-700 text-sm text-white">
+                        <input type="text" value="${r.category}" onchange="updateRewardProp(${r.id}, 'category', this.value)" placeholder="Categoría" class="px-2.5 py-1.5 bg-slate-800 rounded border border-slate-700 text-sm text-white">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateRewardProp(id, prop, val) {
+            const r = rewards.find(item => item.id === id);
+            if(r) { r[prop] = val; saveAll(); }
+        }
+
+        function addNewReward() {
+            const newId = rewards.length > 0 ? Math.max(...rewards.map(r => r.id)) + 1 : 1;
+            rewards.push({ id: newId, title: "Nuevo Premio / Promo", points: 500, category: "General", desc: "Descripción" });
+            saveAll();
+            renderRewardsEditor();
+        }
+
+        function deleteReward(id) {
+            rewards = rewards.filter(r => r.id !== id);
+            saveAll();
+            renderRewardsEditor();
+        }
+
+        // Funciones del Cliente
+        function loginClient() {
+            const val = document.getElementById('clientInput').value.trim().toUpperCase();
+            if(!val) { alert("Ingresa tu celular o código."); return; }
+            const found = clients.find(c => c.code === val || c.phone === val);
+            if(found) {
+                currentClient = found;
+                document.getElementById('clientLoginScreen').classList.add('hidden');
+                document.getElementById('clientDashboard').classList.remove('hidden');
+                document.getElementById('headerNav').classList.remove('hidden');
+                updateClientDashboard();
+            } else {
+                alert("Cliente no encontrado. Consulta en el mostrador para registrarte.");
+            }
+        }
+
+        function updateClientDashboard() {
+            if(!currentClient) return;
+            document.getElementById('clientNameDisplay').textContent = currentClient.name;
+            document.getElementById('clientPointsDisplay').textContent = currentClient.points.toLocaleString();
+            document.getElementById('clientCodeBadge').textContent = currentClient.code;
+            document.getElementById('clientPhoneDisplay').textContent = `📞 ${currentClient.phone}`;
+            renderClientCatalog();
+        }
+
+        function renderClientCatalog() {
+            const container = document.getElementById('clientRewardsCatalog');
+            container.innerHTML = rewards.map(r => {
+                const canAfford = currentClient.points >= r.points;
+                const existingReq = requests.find(req => req.clientCode === currentClient.code && req.rewardId === r.id && req.status === 'Pendiente');
+                
+                let btnHtml = '';
+                if(existingReq) {
+                    btnHtml = `<span class="px-3 py-1.5 bg-amber-500/20 text-amber-400 rounded-xl text-xs font-semibold">Solicitud en Proceso...</span>`;
+                } else {
+                    btnHtml = `<button onclick="requestRedemption(${r.id})" ${canAfford ? '' : 'disabled'} class="px-4 py-2 rounded-xl text-xs font-semibold transition ${canAfford ? 'bg-orange-600 hover:bg-orange-700 text-white shadow' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}">${canAfford ? '✨ Solicitar Canje' : 'Puntos Insuficientes'}</button>`;
+                }
+
+                return `
+                    <div class="border border-slate-700 bg-slate-900/60 rounded-2xl p-4 flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded">${r.category}</span>
+                            <h4 class="font-bold text-white text-sm mt-1">${r.title}</h4>
+                            <p class="text-xs text-slate-400">${r.desc} • <strong class="text-amber-400">${r.points} Pts</strong></p>
+                        </div>
+                        <div>${btnHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function requestRedemption(rewardId) {
+            const reward = rewards.find(r => r.id === rewardId);
+            if(currentClient.points < reward.points) return;
+            if(confirm(`¿Deseas solicitar el canje de "${reward.title}" por ${reward.points} puntos?`)) {
+                requests.unshift({
+                    id: Date.now(),
+                    clientCode: currentClient.code,
+                    clientName: currentClient.name,
+                    rewardId: reward.id,
+                    rewardTitle: reward.title,
+                    rewardPoints: reward.points,
+                    status: 'Pendiente'
+                });
+                saveAll();
+                updateClientDashboard();
+                alert("¡Solicitud enviada al mostrador con éxito! Acércate a reclamar tu premio.");
+            }
+        }
+    </script>
+</body>
+</html>
